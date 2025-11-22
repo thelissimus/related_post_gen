@@ -30,14 +30,16 @@
             ];
           };
 
+          hlib = pkgs.haskell.lib;
+
           hpkgs = pkgs.haskell.packages.ghc912.override {
             ghc = pkgs.ghcUseLlvm;
             overrides = _: super: {
-              network = pkgs.haskell.lib.dontCheck super.network;
+              network = hlib.dontCheck super.network;
             };
           };
 
-          related-post-gen = pkgs.haskell.lib.overrideCabal (hpkgs.callCabal2nix "related-post-gen" ./. { }) (_: {
+          related-post-gen = hlib.overrideCabal (hpkgs.callCabal2nix "related-post-gen" ./. { }) (_: {
             doCheck = true;
             doHaddock = false;
             enableLibraryProfiling = false;
@@ -52,7 +54,7 @@
           devShells.default = pkgs.mkShell {
             buildInputs = [
               hpkgs.cabal-install
-              # hpkgs.haskell-language-server
+              hpkgs.haskell-language-server
               hpkgs.fourmolu
               hpkgs.ghcid
               hpkgs.ghc
