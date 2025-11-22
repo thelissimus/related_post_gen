@@ -98,7 +98,7 @@ rankTopN mba topN sharedTags = do
    where
     go !curr
       | curr >= 0 = do
-          !entry@(_, !count') <- VSM.read topN_ curr
+          entry@(_, !count') <- VSM.read topN_ curr
           if count > count' then do
             VSM.write topN_ (curr + 1) entry
             go (curr - 1)
