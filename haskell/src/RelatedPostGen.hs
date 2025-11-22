@@ -3,7 +3,6 @@ module RelatedPostGen (module RelatedPostGen) where
 import Control.DeepSeq (NFData)
 import Control.Monad (when)
 import Control.Monad.ST.Strict (ST)
-
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Primitive.ByteArray (MutableByteArray, newByteArray, readByteArray, writeByteArray)
 import Data.Text.Short (ShortText)
@@ -14,9 +13,7 @@ import Data.Vector.Mutable qualified as VM
 import Data.Vector.Storable.Mutable (STVector)
 import Data.Vector.Storable.Mutable qualified as VSM
 import Data.Word (Word32, Word8)
-
 import Foreign.Storable.Tuple ()
-
 import GHC.Generics (Generic)
 
 type HashTable s k v = H.Dictionary (H.PrimState (ST s)) VM.MVector k VM.MVector v
@@ -29,7 +26,7 @@ data Post = MkPost
   , title :: !ShortText
   }
   deriving stock (Generic, Show)
-  deriving anyclass (FromJSON, ToJSON, NFData)
+  deriving anyclass (FromJSON, NFData, ToJSON)
 
 data RelatedPosts = MkRelatedPosts
   { _id :: !ShortText
@@ -37,7 +34,7 @@ data RelatedPosts = MkRelatedPosts
   , related :: !(Vector Post)
   }
   deriving stock (Generic, Show)
-  deriving anyclass (FromJSON, ToJSON, NFData)
+  deriving anyclass (FromJSON, NFData, ToJSON)
 
 limitTopN :: Int
 limitTopN = 5
@@ -102,9 +99,11 @@ rankTopN mba topN sharedTags = do
     go !curr
       | curr >= 0 = do
           !entry@(_, !count') <- VSM.read topN_ curr
-          if count > count'
-            then do VSM.write topN_ (curr + 1) entry; go (curr - 1)
-            else pure curr
+          if count > count' then do
+            VSM.write topN_ (curr + 1) entry
+            go (curr - 1)
+          else
+            pure curr
       | otherwise = pure curr
 {-# INLINE rankTopN #-}
 
