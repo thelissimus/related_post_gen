@@ -4,7 +4,7 @@ import Control.DeepSeq (NFData)
 import Control.Monad (when)
 import Control.Monad.ST.Strict (ST)
 import Data.Aeson (FromJSON, ToJSON)
-import Data.Primitive.ByteArray (MutableByteArray, newByteArray, readByteArray, writeByteArray)
+import Data.Primitive.ByteArray (newByteArray, readByteArray, writeByteArray)
 import Data.Text.Short (ShortText)
 import Data.Vector (Vector, indexed, (!))
 import Data.Vector qualified as V
@@ -64,11 +64,10 @@ buildRelatedPosts :: TagMap s -> Vector (Int, Post) -> ST s (Vector RelatedPosts
 buildRelatedPosts tagMap postsIdx = do
   !sharedTags :: STVector s Word8 <- VSM.replicate (V.length postsIdx) 0 -- shared tag count for each post
   !topN :: STVector s (Word32, Word8) <- VSM.replicate limitTopN (0, 0) -- top N post indices and their shared tag counts
-  !mba <- newByteArray 1 -- current minimum shared tag count (Word8); variable as a raw byte array with 1 element
   V.forM postsIdx \(!ix, MkPost{_id, tags}) -> do
     collectSharedTags sharedTags tagMap tags
     VSM.write sharedTags ix 0 -- exclude self from related posts
-    rankTopN mba topN sharedTags
+    rankTopN topN sharedTags
     !related <- buildRelated postsIdx topN
     VSM.set topN (0, 0) -- reset
     VSM.set sharedTags 0 -- reset
@@ -82,8 +81,9 @@ collectSharedTags sharedTags tagMap tags = do
     VSM.forM_ idxs $ VSM.modify sharedTags (+ 1) . fromIntegral
 {-# INLINE collectSharedTags #-}
 
-rankTopN :: MutableByteArray s -> STVector s (Word32, Word8) -> STVector s Word8 -> ST s ()
-rankTopN mba topN sharedTags = do
+rankTopN :: STVector s (Word32, Word8) -> STVector s Word8 -> ST s ()
+rankTopN topN sharedTags = do
+  !mba <- newByteArray 1
   writeByteArray mba 0 (0 :: Word8) -- initialize the count
   VSM.iforM_ sharedTags \(!ix) (!count) -> do
     !minTags <- readByteArray mba 0
