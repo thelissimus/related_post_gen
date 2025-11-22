@@ -1,5 +1,3 @@
-{-# LANGUAGE Strict #-}
-
 module RelatedPostGen (module RelatedPostGen) where
 
 import Control.DeepSeq (NFData)
