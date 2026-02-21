@@ -1,9 +1,11 @@
+{-# LANGUAGE TemplateHaskell #-}
+
 module RelatedPostGen (module RelatedPostGen) where
 
 import Control.DeepSeq (NFData)
 import Control.Monad (when)
 import Control.Monad.ST.Strict (ST)
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson.TH
 import Data.Primitive.ByteArray (newByteArray, readByteArray, writeByteArray)
 import Data.Text.Short (ShortText)
 import Data.Vector (Vector, indexed, (!))
@@ -26,7 +28,9 @@ data Post = MkPost
   , title :: !ShortText
   }
   deriving stock (Generic, Show)
-  deriving anyclass (FromJSON, NFData, ToJSON)
+  deriving anyclass (NFData)
+
+$(deriveJSON defaultOptions ''Post)
 
 data RelatedPosts = MkRelatedPosts
   { _id :: !ShortText
@@ -34,7 +38,9 @@ data RelatedPosts = MkRelatedPosts
   , related :: !(Vector Post)
   }
   deriving stock (Generic, Show)
-  deriving anyclass (FromJSON, NFData, ToJSON)
+  deriving anyclass (NFData)
+
+$(deriveJSON defaultOptions ''RelatedPosts)
 
 limitTopN :: Int
 limitTopN = 5
